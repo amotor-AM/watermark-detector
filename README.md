@@ -1,36 +1,91 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WatermarkDetect
+
+Universal watermark detection web app. Detect watermarks from TikTok, Instagram, YouTube, CapCut, stock photos, and more — entirely in your browser.
+
+## Features
+
+- **Universal Detection** — Supports multiple platforms and watermark types
+- **100% Private** — All processing runs client-side; images never leave your device
+- **Multi-Layer Analysis** — Edge detection, frequency analysis (FFT), color channel analysis, metadata extraction, pattern matching
+- **Visible & Invisible** — Detects logos, text overlays, semi-transparent marks, tiled patterns, and embedded watermarks
+- **Visual Region Mapping** — Highlights detected watermark regions on the image
+- **Dark Mode** — Full light/dark theme support
+- **Mobile Responsive** — Works on all screen sizes
+
+## Tech Stack
+
+- **Framework:** Next.js (App Router, TypeScript)
+- **Styling:** Tailwind CSS v4 + shadcn/ui
+- **Animations:** Framer Motion
+- **Detection:** Canvas API, Sobel edge detection, FFT frequency analysis, EXIF/XMP metadata (via exifr)
+- **Icons:** Lucide React
+
+## Detection Methods
+
+| Method | What it finds |
+|---|---|
+| Edge detection (Sobel) | Logos, text overlays, sharp branding elements |
+| Frequency analysis (FFT) | Invisible/embedded watermarks in frequency domain |
+| Color channel analysis | Semi-transparent overlays, gradient bands |
+| Pattern matching | Tiled/repeating watermarks (stock photos) |
+| Metadata extraction | EXIF/XMP data revealing source platform or software |
+| Platform heuristics | TikTok, CapCut, Instagram-specific watermark patterns |
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+# Install dependencies
+npm install
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to use the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/
+│   ├── layout.tsx          # Root layout with theme provider
+│   ├── page.tsx            # Landing page
+│   └── detect/
+│       └── page.tsx        # Detection tool page
+├── components/
+│   ├── ui/                 # shadcn/ui components
+│   ├── navbar.tsx          # Navigation bar
+│   ├── footer.tsx          # Footer
+│   ├── theme-provider.tsx  # Dark/light theme context
+│   ├── image-dropzone.tsx  # Drag-and-drop image upload
+│   ├── detection-results.tsx # Results display
+│   └── region-overlay.tsx  # Canvas overlay for visual mapping
+└── lib/
+    ├── utils.ts            # Utility functions
+    └── detection/
+        ├── types.ts        # TypeScript types
+        ├── engine.ts       # Main detection orchestrator
+        ├── visual.ts       # Visual analysis (edges, colors, patterns)
+        ├── frequency.ts    # FFT frequency domain analysis
+        └── metadata.ts     # EXIF/XMP metadata extraction
+```
 
-## Learn More
+## Deployment
 
-To learn more about Next.js, take a look at the following resources:
+Optimized for Vercel free tier:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npx vercel
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Zero server cost — all detection runs client-side.
 
-## Deploy on Vercel
+## License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
