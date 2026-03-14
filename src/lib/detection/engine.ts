@@ -8,24 +8,40 @@ export async function detectWatermarks(file: File): Promise<DetectionReport> {
 
   // Load image
   const img = await loadImage(file);
+  
+  // Downsample large images for faster processing
+  const maxDim = 1920;
+  const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+  const targetWidth = Math.floor(img.width * scale);
+  const targetHeight = Math.floor(img.height * scale);
+  
   const canvas = document.createElement("canvas");
-  canvas.width = img.width;
-  canvas.height = img.height;
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
   const ctx = canvas.getContext("2d")!;
-  ctx.drawImage(img, 0, 0);
+  ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
-  // Run all detection methods with timeout protection
+  // Run detection methods asynchronously to avoid blocking
   const metadata = await extractMetadata(file);
   const metadataResults = analyzeMetadata(metadata);
-  const visualResults = analyzeVisual(ctx, img.width, img.height);
+  
+  // Break up visual analysis to prevent blocking
+  const visualResults = await new Promise<DetectionResult[]>((resolve) => {
+    setTimeout(() => {
+      resolve(analyzeVisual(ctx, targetWidth, targetHeight));
+    }, 0);
+  });
   
   // Skip frequency analysis for very large images or use timeout
   let frequencyResults: DetectionResult[] = [];
-  const maxDim = Math.max(img.width, img.height);
-  if (maxDim <= 2048) {
+  if (Math.max(targetWidth, targetHeight) <= 1920) {
     try {
       frequencyResults = await Promise.race([
-        Promise.resolve(analyzeFrequency(ctx, img.width, img.height)),
+        new Promise<DetectionResult[]>((resolve) => {
+          setTimeout(() => {
+            resolve(analyzeFrequency(ctx, targetWidth, targetHeight));
+          }, 0);
+        }),
         new Promise<DetectionResult[]>((_, reject) => 
           setTimeout(() => reject(new Error('Frequency analysis timeout')), 5000)
         )
@@ -36,10 +52,25 @@ export async function detectWatermarks(file: File): Promise<DetectionReport> {
     }
   }
 
+  // Scale regions back to original dimensions
+  const scaleRegions = (results: DetectionResult[]): DetectionResult[] => {
+    if (scale === 1) return results;
+    return results.map(result => ({
+      ...result,
+      regions: result.regions.map(region => ({
+        ...region,
+        x: Math.round(region.x / scale),
+        y: Math.round(region.y / scale),
+        width: Math.round(region.width / scale),
+        height: Math.round(region.height / scale),
+      }))
+    }));
+  };
+
   const allDetections: DetectionResult[] = [
     ...metadataResults,
-    ...visualResults,
-    ...frequencyResults,
+    ...scaleRegions(visualResults),
+    ...scaleRegions(frequencyResults),
   ];
 
   // Deduplicate overlapping regions of same type
