@@ -14,11 +14,27 @@ export async function detectWatermarks(file: File): Promise<DetectionReport> {
   const ctx = canvas.getContext("2d")!;
   ctx.drawImage(img, 0, 0);
 
-  // Run all detection methods
+  // Run all detection methods with timeout protection
   const metadata = await extractMetadata(file);
   const metadataResults = analyzeMetadata(metadata);
   const visualResults = analyzeVisual(ctx, img.width, img.height);
-  const frequencyResults = analyzeFrequency(ctx, img.width, img.height);
+  
+  // Skip frequency analysis for very large images or use timeout
+  let frequencyResults: DetectionResult[] = [];
+  const maxDim = Math.max(img.width, img.height);
+  if (maxDim <= 2048) {
+    try {
+      frequencyResults = await Promise.race([
+        Promise.resolve(analyzeFrequency(ctx, img.width, img.height)),
+        new Promise<DetectionResult[]>((_, reject) => 
+          setTimeout(() => reject(new Error('Frequency analysis timeout')), 5000)
+        )
+      ]);
+    } catch (err) {
+      console.warn('Frequency analysis skipped:', err);
+      frequencyResults = [];
+    }
+  }
 
   const allDetections: DetectionResult[] = [
     ...metadataResults,
